@@ -1,26 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".IndexActivity">
 
+    <!-- 크기를 줄인 카메라 프리뷰 -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/camerax_preview"
+        android:layout_width="300dp"
+        android:layout_height="400dp"
+        android:layout_centerInParent="true" />
+
+    <!-- QR 코드 인식을 안내하는 텍스트 -->
     <TextView
-        android:id="@+id/qr_instruction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="파일에서 QR 코드를 선택하세요."
-        android:textSize="20sp"
+        android:text="QR코드를 인식해주세요."
+        android:textSize="20dp"
         android:textStyle="bold"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"/>
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="50dp" />
 
-    <Button
-        android:id="@+id/button_upload"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="파일 선택"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:onClick="onSelectFileButtonClick"/>
 </RelativeLayout>
