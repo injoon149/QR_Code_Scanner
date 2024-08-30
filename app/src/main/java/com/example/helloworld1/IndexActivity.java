@@ -1,15 +1,22 @@
 package com.example.helloworld1;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.Image;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Surface;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -18,6 +25,7 @@ import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -38,17 +46,39 @@ import java.util.concurrent.Executors;
 
 public class IndexActivity extends AppCompatActivity {
 
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 1001;
     private PreviewView mPreviewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ExecutorService cameraExecutor;
     private MyImageAnalyzer myImageAnalyzer;
+    private boolean isScanning = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_index);
 
-        init();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_REQUEST_CODE);
+        } else {
+            init();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                init();
+            } else {
+                Toast.makeText(this, "카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
     }
 
     private void init() {
@@ -79,7 +109,7 @@ public class IndexActivity extends AppCompatActivity {
 
         ImageCapture imageCapture = new ImageCapture.Builder().build();
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetRotation(Surface.ROTATION_0)  // ROTATION_0 설정
+                .setTargetRotation(Surface.ROTATION_0)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build();
 
@@ -91,6 +121,11 @@ public class IndexActivity extends AppCompatActivity {
     }
 
     private void scanBarcode(ImageProxy image) {
+        if (!isScanning) {
+            image.close();
+            return;
+        }
+
         @SuppressLint("UnsafeOptInUsageError") Image mediaImage = image.getImage();
         if (mediaImage != null) {
             InputImage inputImage = InputImage.fromMediaImage(mediaImage, image.getImageInfo().getRotationDegrees());
@@ -108,8 +143,11 @@ public class IndexActivity extends AppCompatActivity {
                     .addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
                         @Override
                         public void onSuccess(List<Barcode> barcodes) {
-                            readerBarcodeData(barcodes);
-                            Log.d("cameraSuccess::", barcodes.toString());
+                            if (!barcodes.isEmpty()) {
+                                isScanning = false;
+                                vibratePhone();
+                                readerBarcodeData(barcodes);
+                            }
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
@@ -127,23 +165,48 @@ public class IndexActivity extends AppCompatActivity {
         }
     }
 
+    private void vibratePhone() {
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // API 26 이상에서는 VibrationEffect 사용
+                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                // API 26 미만에서는 기본 vibrate 사용
+                vibrator.vibrate(200); // 200ms 동안 진동
+            }
+        }
+    }
+
     private void readerBarcodeData(List<Barcode> barcodes) {
         for (Barcode barcode : barcodes) {
             String rawValue = barcode.getRawValue();
             int valueType = barcode.getValueType();
 
-            switch (valueType) {
-                case Barcode.TYPE_WIFI:
-                    Toast.makeText(this, "Wi-Fi QR 코드 인식됨: " + rawValue, Toast.LENGTH_SHORT).show();
-                    break;
-                case Barcode.TYPE_URL:
-                    Toast.makeText(this, "URL QR 코드 인식됨: " + rawValue, Toast.LENGTH_SHORT).show();
-                    break;
-                default:
-                    Toast.makeText(this, "QR 코드 인식됨: " + rawValue, Toast.LENGTH_SHORT).show();
-                    break;
-            }
+            String message = "QR 코드 인식됨: " + asciiValue(rawValue);
+            showAlertDialog(message);
         }
+    }
+
+    private String asciiValue(String rawValue) {
+        StringBuilder asciiValue = new StringBuilder();
+        for (char ch : rawValue.toCharArray()) {
+            asciiValue.append((int) ch).append(" ");
+        }
+        return asciiValue.toString().trim();
+    }
+
+    private void showAlertDialog(String message) {
+        new AlertDialog.Builder(this)
+                .setTitle("스캔 결과")
+                .setMessage(message)
+                .setPositiveButton("확인", (dialog, which) -> {
+                    isScanning = true;
+                })
+                .setOnDismissListener(dialog -> {
+                    isScanning = true;
+                })
+                .show();
     }
 
     private void closeCamera() {
