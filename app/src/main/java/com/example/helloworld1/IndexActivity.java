@@ -181,20 +181,25 @@ public class IndexActivity extends AppCompatActivity {
     private void readerBarcodeData(List<Barcode> barcodes) {
         for (Barcode barcode : barcodes) {
             String rawValue = barcode.getRawValue();
+            String decodedValue = convertAsciiToString(rawValue);
             int valueType = barcode.getValueType();
 
-            String message = "QR 코드 인식됨: " + asciiValue(rawValue);
+            String message = "QR 코드 인식됨:\n" + decodedValue;
             showAlertDialog(message);
         }
     }
 
-    private String asciiValue(String rawValue) {
-        StringBuilder asciiValue = new StringBuilder();
-        for (char ch : rawValue.toCharArray()) {
-            asciiValue.append((int) ch).append(" ");
+    private String convertAsciiToString(String hexString) {
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < hexString.length(); i += 2) {
+            String hex = hexString.substring(i, i + 2);
+            int decimal = Integer.parseInt(hex, 16);
+            output.append((char) decimal);
         }
-        return asciiValue.toString().trim();
+        return output.toString();
     }
+
+
 
     private void showAlertDialog(String message) {
         new AlertDialog.Builder(this)
