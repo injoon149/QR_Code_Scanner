@@ -14,8 +14,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
 
-        <!-- 메인 액티비티로 설정된 IndexActivity -->
-        <activity android:name=".IndexActivity"
+        <!-- 메인 액티비티로 설정된 SwipeMenuActivity -->
+        <activity android:name=".itemtouchHelper.SwipeMenuActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
