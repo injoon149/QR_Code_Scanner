@@ -14,7 +14,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
 
-        <!-- 메인 액티비티로 설정된 SwipeMenuActivity -->
+        <!-- 현재 메인 액티비티로 설정된 SwipeMenuActivity -->
+        <!-- <activity android:name=".itemtouchHelper.CachapaActivity" -->
         <activity android:name=".itemtouchHelper.SwipeMenuActivity"
             android:exported="true">
             <intent-filter>
